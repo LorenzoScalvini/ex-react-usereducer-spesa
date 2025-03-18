@@ -10,15 +10,37 @@ const ShoppingCart = () => {
 
   const [addedProducts, setAddedProducts] = useState([]);
 
+  // Aggiunge un prodotto al carrello o incrementa la quantità se già presente
   const addToCart = (product) => {
-    const isAlreadyInCart = addedProducts.some(
+    const productIndex = addedProducts.findIndex(
       (item) => item.name === product.name
     );
 
-    if (!isAlreadyInCart) {
-      const productWithQuantity = { ...product, quantity: 1 };
-      setAddedProducts([...addedProducts, productWithQuantity]);
+    if (productIndex === -1) {
+      // Se il prodotto non è nel carrello, lo aggiunge con quantità 1
+      setAddedProducts([...addedProducts, { ...product, quantity: 1 }]);
+    } else {
+      // Se il prodotto è già nel carrello, incrementa la quantità
+      const updatedProducts = [...addedProducts];
+      updatedProducts[productIndex].quantity += 1;
+      setAddedProducts(updatedProducts);
     }
+  };
+
+  // Rimuove un prodotto dal carrello
+  const removeFromCart = (productName) => {
+    const updatedProducts = addedProducts.filter(
+      (item) => item.name !== productName
+    );
+    setAddedProducts(updatedProducts);
+  };
+
+  // Calcola il totale del carrello
+  const calculateTotal = () => {
+    return addedProducts.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
   };
 
   return (
@@ -51,11 +73,17 @@ const ShoppingCart = () => {
                 <div>
                   <span>{item.name}</span>
                   <span>€{item.price.toFixed(2)}</span>
+                  <span>Quantità: {item.quantity}</span>
                 </div>
-                <span>Quantità: {item.quantity}</span>
+                <button onClick={() => removeFromCart(item.name)}>
+                  Rimuovi dal carrello
+                </button>
               </li>
             ))}
           </ul>
+          <div>
+            <strong>Totale da pagare: €{calculateTotal().toFixed(2)}</strong>
+          </div>
         </div>
       )}
     </div>
