@@ -1,5 +1,38 @@
-import React, { useState } from 'react';
+import React, { useReducer } from 'react';
 
+// Definizione del reducer per gestire lo stato del carrello
+function cartReducer(state, action) {
+  switch (action.type) {
+    case 'ADD_ITEM':
+      const existingItemIndex = state.findIndex(
+        (item) => item.name === action.payload.name
+      );
+      if (existingItemIndex !== -1) {
+        // Se il prodotto è già nel carrello, incrementa la quantità
+        const updatedState = [...state];
+        updatedState[existingItemIndex].quantity += 1;
+        return updatedState;
+      } else {
+        // Se il prodotto non è nel carrello, lo aggiunge con quantità 1
+        return [...state, { ...action.payload, quantity: 1 }];
+      }
+
+    case 'REMOVE_ITEM':
+      return state.filter((item) => item.name !== action.payload);
+
+    case 'UPDATE_QUANTITY':
+      return state.map((item) =>
+        item.name === action.payload.name
+          ? { ...item, quantity: Math.max(1, action.payload.quantity) } // Impedisce quantità negative o zero
+          : item
+      );
+
+    default:
+      return state;
+  }
+}
+
+// Componente principale ShoppingCart
 export default function ShoppingCart() {
   const products = [
     { name: 'Mela', price: 0.5 },
@@ -8,50 +41,31 @@ export default function ShoppingCart() {
     { name: 'Pasta', price: 0.7 },
   ];
 
-  const [addedProducts, setAddedProducts] = useState([]);
+  // Inizializzazione dello stato con useReducer
+  const [addedProducts, dispatch] = useReducer(cartReducer, []);
 
-  // Aggiunge un prodotto al carrello o incrementa la quantità se già presente
+  // Funzione per aggiungere un prodotto al carrello
   const addToCart = (product) => {
-    const productIndex = addedProducts.findIndex(
-      (item) => item.name === product.name
-    );
-
-    if (productIndex === -1) {
-      // Se il prodotto non è nel carrello, lo aggiunge con quantità 1
-      setAddedProducts([...addedProducts, { ...product, quantity: 1 }]);
-    } else {
-      // Se il prodotto è già nel carrello, incrementa la quantità
-      const updatedProducts = [...addedProducts];
-      updatedProducts[productIndex].quantity += 1;
-      setAddedProducts(updatedProducts);
-    }
+    dispatch({ type: 'ADD_ITEM', payload: product });
   };
 
-  // Rimuove un prodotto dal carrello
+  // Funzione per rimuovere un prodotto dal carrello
   const removeFromCart = (productName) => {
-    const updatedProducts = addedProducts.filter(
-      (item) => item.name !== productName
-    );
-    setAddedProducts(updatedProducts);
+    dispatch({ type: 'REMOVE_ITEM', payload: productName });
   };
 
-  // Aggiorna la quantità di un prodotto nel carrello
+  // Funzione per aggiornare la quantità di un prodotto nel carrello
   const updateProductQuantity = (productName, newQuantity) => {
-    // Converte il valore in un numero intero
     const quantity = parseInt(newQuantity, 10);
-
-    // Impedisce valori negativi o pari a zero
-    if (quantity < 1 || isNaN(quantity)) {
-      return; // Non aggiornare la quantità se è invalida
+    if (!isNaN(quantity)) {
+      dispatch({
+        type: 'UPDATE_QUANTITY',
+        payload: { name: productName, quantity },
+      });
     }
-
-    const updatedProducts = addedProducts.map((item) =>
-      item.name === productName ? { ...item, quantity } : item
-    );
-    setAddedProducts(updatedProducts);
   };
 
-  // Calcola il totale del carrello
+  // Funzione per calcolare il totale del carrello
   const calculateTotal = () => {
     return addedProducts.reduce(
       (total, item) => total + item.price * item.quantity,
