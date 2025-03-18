@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ShoppingCart = () => {
+export default function ShoppingCart() {
   const products = [
     { name: 'Mela', price: 0.5 },
     { name: 'Pane', price: 1.2 },
@@ -31,6 +31,22 @@ const ShoppingCart = () => {
   const removeFromCart = (productName) => {
     const updatedProducts = addedProducts.filter(
       (item) => item.name !== productName
+    );
+    setAddedProducts(updatedProducts);
+  };
+
+  // Aggiorna la quantità di un prodotto nel carrello
+  const updateProductQuantity = (productName, newQuantity) => {
+    // Converte il valore in un numero intero
+    const quantity = parseInt(newQuantity, 10);
+
+    // Impedisce valori negativi o pari a zero
+    if (quantity < 1 || isNaN(quantity)) {
+      return; // Non aggiornare la quantità se è invalida
+    }
+
+    const updatedProducts = addedProducts.map((item) =>
+      item.name === productName ? { ...item, quantity } : item
     );
     setAddedProducts(updatedProducts);
   };
@@ -73,7 +89,19 @@ const ShoppingCart = () => {
                 <div>
                   <span>{item.name}</span>
                   <span>€{item.price.toFixed(2)}</span>
-                  <span>Quantità: {item.quantity}</span>
+                </div>
+                <div>
+                  <label>
+                    Quantità:
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      min="1"
+                      onChange={(e) =>
+                        updateProductQuantity(item.name, e.target.value)
+                      }
+                    />
+                  </label>
                 </div>
                 <button onClick={() => removeFromCart(item.name)}>
                   Rimuovi dal carrello
@@ -88,6 +116,4 @@ const ShoppingCart = () => {
       )}
     </div>
   );
-};
-
-export default ShoppingCart;
+}
