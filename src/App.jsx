@@ -1,131 +1,105 @@
-import React, { useReducer } from 'react';
+import React, { useReducer } from "react";
 
-// Definizione del reducer per gestire lo stato del carrello
 function cartReducer(state, action) {
   switch (action.type) {
-    case 'ADD_ITEM':
-      const existingItemIndex = state.findIndex(
-        (item) => item.name === action.payload.name
+    case "add":
+      // Controlla se il prodotto è già nel carrello
+      const itemIndex = state.findIndex(
+        (item) => item.name === action.product.name
       );
-      if (existingItemIndex !== -1) {
-        // Se il prodotto è già nel carrello, incrementa la quantità
-        const updatedState = [...state];
-        updatedState[existingItemIndex].quantity += 1;
-        return updatedState;
+      if (itemIndex >= 0) {
+        // Se c'è già, aumenta la quantità
+        const newState = [...state];
+        newState[itemIndex].quantity += 1;
+        return newState;
       } else {
-        // Se il prodotto non è nel carrello, lo aggiunge con quantità 1
-        return [...state, { ...action.payload, quantity: 1 }];
+        // Se non c'è, aggiungilo
+        return [...state, { ...action.product, quantity: 1 }];
       }
 
-    case 'REMOVE_ITEM':
-      return state.filter((item) => item.name !== action.payload);
+    case "remove":
+      // Rimuovi il prodotto
+      return state.filter((item) => item.name !== action.productName);
 
-    case 'UPDATE_QUANTITY':
-      return state.map((item) =>
-        item.name === action.payload.name
-          ? { ...item, quantity: Math.max(1, action.payload.quantity) } // Impedisce quantità negative o zero
-          : item
-      );
+    case "update":
+      // Aggiorna la quantità
+      return state.map((item) => {
+        if (item.name === action.productName) {
+          return { ...item, quantity: Math.max(1, action.newQuantity) };
+        }
+        return item;
+      });
 
     default:
       return state;
   }
 }
 
-// Componente principale ShoppingCart
 export default function ShoppingCart() {
+  const [cart, dispatch] = useReducer(cartReducer, []);
+
   const products = [
-    { name: 'Mela', price: 0.5 },
-    { name: 'Pane', price: 1.2 },
-    { name: 'Latte', price: 1.0 },
-    { name: 'Pasta', price: 0.7 },
+    { name: "Mela", price: 0.5 },
+    { name: "Pane", price: 1.2 },
+    { name: "Latte", price: 1.0 },
+    { name: "Pasta", price: 0.7 },
   ];
 
-  // Inizializzazione dello stato con useReducer
-  const [addedProducts, dispatch] = useReducer(cartReducer, []);
-
-  // Funzione per aggiungere un prodotto al carrello
+  // Funzioni per modificare il carrello
   const addToCart = (product) => {
-    dispatch({ type: 'ADD_ITEM', payload: product });
+    dispatch({ type: "add", product });
   };
 
-  // Funzione per rimuovere un prodotto dal carrello
   const removeFromCart = (productName) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: productName });
+    dispatch({ type: "remove", productName });
   };
 
-  // Funzione per aggiornare la quantità di un prodotto nel carrello
-  const updateProductQuantity = (productName, newQuantity) => {
-    const quantity = parseInt(newQuantity, 10);
+  const updateQuantity = (productName, newQuantity) => {
+    const quantity = Number(newQuantity);
     if (!isNaN(quantity)) {
-      dispatch({
-        type: 'UPDATE_QUANTITY',
-        payload: { name: productName, quantity },
-      });
+      dispatch({ type: "update", productName, newQuantity: quantity });
     }
   };
 
-  // Funzione per calcolare il totale del carrello
-  const calculateTotal = () => {
-    return addedProducts.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
-  };
+  // Calcola il totale
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <div>
-      <h1>Lista Prodotti</h1>
+      <h1>Negozio</h1>
 
       <div>
-        <h2>Prodotti disponibili</h2>
+        <h2>Prodotti</h2>
         <ul>
-          {products.map((product, index) => (
-            <li key={index}>
-              <div>
-                <span>{product.name}</span>
-                <span>€{product.price.toFixed(2)}</span>
-              </div>
-              <button onClick={() => addToCart(product)}>
-                Aggiungi al carrello
-              </button>
+          {products.map((product, i) => (
+            <li key={i}>
+              {product.name} - €{product.price.toFixed(2)}
+              <button onClick={() => addToCart(product)}>Aggiungi</button>
             </li>
           ))}
         </ul>
       </div>
 
-      {addedProducts.length > 0 && (
+      {cart.length > 0 && (
         <div>
           <h2>Carrello</h2>
           <ul>
-            {addedProducts.map((item, index) => (
-              <li key={index}>
-                <div>
-                  <span>{item.name}</span>
-                  <span>€{item.price.toFixed(2)}</span>
-                </div>
-                <div>
-                  <label>
-                    Quantità:
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      min="1"
-                      onChange={(e) =>
-                        updateProductQuantity(item.name, e.target.value)
-                      }
-                    />
-                  </label>
-                </div>
+            {cart.map((item, i) => (
+              <li key={i}>
+                {item.name} - €{item.price.toFixed(2)}
+                <input
+                  type="number"
+                  value={item.quantity}
+                  min="1"
+                  onChange={(e) => updateQuantity(item.name, e.target.value)}
+                />
                 <button onClick={() => removeFromCart(item.name)}>
-                  Rimuovi dal carrello
+                  Rimuovi
                 </button>
               </li>
             ))}
           </ul>
-          <div>
-            <strong>Totale da pagare: €{calculateTotal().toFixed(2)}</strong>
-          </div>
+          <p>Totale: €{total.toFixed(2)}</p>
         </div>
       )}
     </div>
